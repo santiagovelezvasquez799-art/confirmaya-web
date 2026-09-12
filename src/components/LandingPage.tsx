@@ -17,7 +17,8 @@ import {
   CreditCard,
   Building2,
   PhoneCall,
-  Laptop
+  Laptop,
+  Check
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
@@ -63,7 +64,7 @@ export default function LandingPage() {
           <div className="hidden md:flex items-center gap-8 text-sm font-semibold text-slate-300">
             <a href="#como-funciona" className="hover:text-emerald-400 transition-colors">¿Cómo Funciona?</a>
             <a href="#demo-interactiva" className="hover:text-emerald-400 transition-colors">Probar Sonido</a>
-            <a href="#precios" className="hover:text-emerald-400 transition-colors">Planes</a>
+            <a href="#precio" className="hover:text-emerald-400 transition-colors">Precio</a>
             <Link href="/descargar" className="hover:text-emerald-400 transition-colors flex items-center gap-1.5">
               <Download className="w-4 h-4 text-emerald-400" />
               Descargar App
@@ -72,18 +73,17 @@ export default function LandingPage() {
 
           <div className="flex items-center gap-3">
             <Link
-              href="/pos"
-              className="px-5 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold text-sm border border-slate-700 transition-all flex items-center gap-2 shadow-sm"
+              href="/login"
+              className="px-4 py-2 rounded-xl text-slate-300 hover:text-white font-bold text-sm transition-colors"
             >
-              <Laptop className="w-4 h-4 text-emerald-400" />
-              <span>Abrir Caja (POS)</span>
+              Iniciar Sesión
             </Link>
             <Link
-              href="/descargar"
+              href="/registro"
               className="px-5 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-sm shadow-lg shadow-emerald-500/25 transition-all hover:scale-105 active:scale-95 flex items-center gap-1.5"
             >
-              <Download className="w-4 h-4" />
-              <span>Instalar Gratis</span>
+              <span>Prueba Gratis 24h</span>
+              <ArrowRight className="w-4 h-4" />
             </Link>
           </div>
         </div>
@@ -91,7 +91,6 @@ export default function LandingPage() {
 
       {/* 2. HERO SECTION */}
       <header className="relative pt-20 pb-28 px-6 overflow-hidden">
-        {/* Glow de fondo */}
         <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[350px] bg-emerald-500/15 blur-[140px] rounded-full pointer-events-none"></div>
 
         <div className="max-w-5xl mx-auto text-center relative z-10">
@@ -109,26 +108,26 @@ export default function LandingPage() {
           </h1>
 
           <p className="text-lg sm:text-xl text-slate-300 max-w-3xl mx-auto mb-10 leading-relaxed">
-            Evita que estafen a tus empleados con capturas editadas o apps clonadas. 
+            Evita que estafen a tus empleados con capturas editadas o comprobantes viejos. 
             <strong> ConfirmaYa</strong> avisa por altavoz en tu negocio en menos de 1 segundo 
-            cuando el dinero <strong>realmente ha ingresado a tu cuenta</strong>.
+            cuando el dinero <strong>realmente ha ingresado a tu cuenta bancaria</strong>.
           </p>
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-16">
             <Link
-              href="/descargar"
+              href="/registro"
               className="w-full sm:w-auto px-8 py-4 rounded-2xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-base shadow-xl shadow-emerald-500/30 transition-all hover:scale-105 active:scale-95 flex items-center justify-center gap-3"
             >
-              <Download className="w-5 h-5" />
-              <span>Descargar App Android (.APK)</span>
+              <Sparkles className="w-5 h-5" />
+              <span>Probar 24 Horas Gratis (Sin Tarjeta)</span>
             </Link>
 
             <Link
-              href="/pos"
+              href="/descargar"
               className="w-full sm:w-auto px-8 py-4 rounded-2xl bg-slate-900/90 hover:bg-slate-800 text-white font-bold text-base border border-slate-700/80 transition-all flex items-center justify-center gap-2"
             >
-              <Laptop className="w-5 h-5 text-emerald-400" />
-              <span>Ver Pantalla de Caja en Vivo</span>
+              <Download className="w-5 h-5 text-emerald-400" />
+              <span>Descargar App Android (.APK)</span>
             </Link>
           </div>
 
@@ -160,8 +159,8 @@ export default function LandingPage() {
         <div className="max-w-4xl mx-auto">
           <div className="text-center mb-10">
             <span className="text-xs font-bold uppercase tracking-widest text-emerald-400">Pruébalo ahora mismo</span>
-            <h2 className="text-3xl sm:text-4xl font-black text-white mt-1">Escucha cómo sonará en tu negocio</h2>
-            <p className="text-slate-400 text-sm mt-2">Haz clic en el botón para escuchar la voz en vivo tal como la escucharán tus cajeros.</p>
+            <h2 className="text-3xl sm:text-4xl font-black text-white mt-1">Escucha cómo sonará en tu mostrador</h2>
+            <p className="text-slate-400 text-sm mt-2">Haz clic para escuchar la voz en tiempo real tal como la escucharán tus empleados.</p>
           </div>
 
           <div className="p-8 rounded-3xl bg-slate-900 border border-emerald-500/40 shadow-2xl shadow-emerald-950/60 grid grid-cols-1 md:grid-cols-3 gap-6 items-center">
@@ -192,7 +191,7 @@ export default function LandingPage() {
       <section id="como-funciona" className="py-24 px-6 max-w-6xl mx-auto">
         <div className="text-center mb-16">
           <span className="text-xs font-bold uppercase tracking-widest text-emerald-400">Simplicidad Total</span>
-          <h2 className="text-3xl sm:text-4xl font-black text-white mt-1">Listo para operar en 3 pasos</h2>
+          <h2 className="text-3xl sm:text-4xl font-black text-white mt-1">Listo para operar en 3 minutos</h2>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
@@ -202,7 +201,7 @@ export default function LandingPage() {
             </div>
             <h3 className="text-xl font-bold text-white mb-3">Descarga la App en tu Celular</h3>
             <p className="text-sm text-slate-400 leading-relaxed">
-              Instalas <strong>ConfirmaYa Agente</strong> en el teléfono donde tienes Nequi o Daviplata. No requiere usuario ni contraseñas bancarias.
+              Instalas <strong>ConfirmaYa Agente</strong> en el teléfono donde tienes Nequi o Daviplata. No te pedirá usuario ni contraseñas bancarias.
             </p>
           </div>
 
@@ -212,7 +211,7 @@ export default function LandingPage() {
             </div>
             <h3 className="text-xl font-bold text-white mb-3">Abre la Caja en tu Computador</h3>
             <p className="text-sm text-slate-400 leading-relaxed">
-              Tus cajeros abren <strong>confirmaya.lat/pos</strong> en su pantalla o tablet. No tienen que instalar ningún programa extra.
+              Tus cajeros abren tu enlace en cualquier computador o tablet. Cero instalaciones en la caja.
             </p>
           </div>
 
@@ -222,145 +221,88 @@ export default function LandingPage() {
             </div>
             <h3 className="text-xl font-bold text-white mb-3">Blindaje Automático 24/7</h3>
             <p className="text-sm text-slate-400 leading-relaxed">
-              Cuando un cliente paga, el altavoz de tu negocio canta el monto y la pantalla se ilumina en verde. ¡Cero estafas!
+              Cuando un cliente transfiere, el altavoz de tu negocio canta el monto y la pantalla se ilumina en verde. ¡Cero estafas!
             </p>
           </div>
         </div>
       </section>
 
-      {/* 5. TABLA COMPARATIVA: CON vs SIN */}
-      <section className="py-20 px-6 bg-slate-900/30 border-t border-slate-800/80">
-        <div className="max-w-4xl mx-auto">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl font-black text-white">¿Por qué lo necesitan tus clientes?</h2>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* SIN CONFIRMAYA */}
-            <div className="p-8 rounded-3xl bg-red-950/20 border border-red-900/40">
-              <h3 className="text-xl font-black text-red-400 flex items-center gap-2 mb-6">
-                <XCircle className="w-6 h-6" /> Sin ConfirmaYa
-              </h3>
-              <ul className="space-y-4 text-sm text-slate-300">
-                <li className="flex items-start gap-3">
-                  <XCircle className="w-5 h-5 text-red-400 shrink-0 mt-0.5" />
-                  <span>Los cajeros confían en capturas editadas o apps clonadas tipo "Nequi Glitch".</span>
-                </li>
-                <li className="flex items-start gap-3">
-                  <XCircle className="w-5 h-5 text-red-400 shrink-0 mt-0.5" />
-                  <span>El cajero debe llamar al dueño a cada rato para preguntar: *"¿ya le entró la plata?"*.</span>
-                </li>
-                <li className="flex items-start gap-3">
-                  <XCircle className="w-5 h-5 text-red-400 shrink-0 mt-0.5" />
-                  <span>Fila y demoras en caja mientras verifican la transferencia.</span>
-                </li>
-              </ul>
-            </div>
-
-            {/* CON CONFIRMAYA */}
-            <div className="p-8 rounded-3xl bg-emerald-950/20 border border-emerald-500/40 shadow-xl shadow-emerald-950/40">
-              <h3 className="text-xl font-black text-emerald-400 flex items-center gap-2 mb-6">
-                <CheckCircle2 className="w-6 h-6" /> Con ConfirmaYa
-              </h3>
-              <ul className="space-y-4 text-sm text-slate-200">
-                <li className="flex items-start gap-3">
-                  <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0 mt-0.5" />
-                  <span>Confirmación en altavoz solo cuando el dinero entra de verdad a la cuenta.</span>
-                </li>
-                <li className="flex items-start gap-3">
-                  <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0 mt-0.5" />
-                  <span>El dueño no necesita compartir sus claves bancarias con los empleados.</span>
-                </li>
-                <li className="flex items-start gap-3">
-                  <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0 mt-0.5" />
-                  <span>Despacho inmediato de clientes en menos de 1 segundo.</span>
-                </li>
-              </ul>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* 6. PLANES Y PRECIOS (WOMPI RECURRENTE) */}
-      <section id="precios" className="py-24 px-6 max-w-5xl mx-auto">
-        <div className="text-center mb-16">
-          <span className="text-xs font-bold uppercase tracking-widest text-emerald-400">Precios Transparentes</span>
-          <h2 className="text-4xl font-black text-white mt-1">Planes para tu Negocio</h2>
-          <p className="text-slate-400 text-sm mt-2">Paga mensualmente con cualquier tarjeta o PSE a través de Wompi. Cancela cuando quieras.</p>
+      {/* 5. EL PLAN ÚNICO: $30.000 COP / MES */}
+      <section id="precio" className="py-24 px-6 max-w-4xl mx-auto">
+        <div className="text-center mb-12">
+          <span className="text-xs font-bold uppercase tracking-widest text-emerald-400">Sin Letras Pequeñas</span>
+          <h2 className="text-4xl sm:text-5xl font-black text-white mt-2">Un Solo Plan. Todo Incluido.</h2>
+          <p className="text-slate-400 text-base mt-3 max-w-xl mx-auto">
+            Protege tu negocio por menos de lo que cuesta un café al día. Pruébalo un turno completo gratis.
+          </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+        <div className="p-10 rounded-3xl bg-gradient-to-b from-slate-900 to-emerald-950/30 border-2 border-emerald-500 shadow-2xl shadow-emerald-950/80 max-w-2xl mx-auto relative overflow-hidden">
+          <div className="absolute top-0 right-0 px-5 py-2 bg-emerald-500 text-slate-950 font-black text-xs uppercase tracking-wider rounded-bl-2xl">
+            Prueba 24 Horas Gratis
+          </div>
+
+          <div className="text-center mb-8 pt-4">
+            <h3 className="text-2xl font-black text-white">Plan Comercial ConfirmaYa</h3>
+            <p className="text-xs text-slate-400 mt-1">Para panaderías, restaurantes, bares, minimercados y tiendas</p>
+            
+            <div className="my-6">
+              <span className="text-6xl font-black text-white tracking-tight">$30.000</span>
+              <span className="text-slate-400 font-bold text-lg"> COP / mes</span>
+              <p className="text-xs text-emerald-400 font-semibold mt-1">Solo $1.000 pesos al día</p>
+            </div>
+          </div>
+
+          <div className="space-y-4 text-sm text-slate-200 mb-10 max-w-md mx-auto">
+            <div className="flex items-center gap-3">
+              <Check className="w-5 h-5 text-emerald-400 shrink-0" />
+              <span><strong>24 Horas de prueba gratis</strong> sin ingresar tarjeta</span>
+            </div>
+            <div className="flex items-center gap-3">
+              <Check className="w-5 h-5 text-emerald-400 shrink-0" />
+              <span>Soporte para <strong>Nequi, Daviplata y Bancolombia</strong></span>
+            </div>
+            <div className="flex items-center gap-3">
+              <Check className="w-5 h-5 text-emerald-400 shrink-0" />
+              <span>Pantalla de caja POS para tus empleados ilimitada</span>
+            </div>
+            <div className="flex items-center gap-3">
+              <Check className="w-5 h-5 text-emerald-400 shrink-0" />
+              <span>Alertas sonoras y voz humana por altavoz en español</span>
+            </div>
+            <div className="flex items-center gap-3">
+              <Check className="w-5 h-5 text-emerald-400 shrink-0" />
+              <span>Pagos seguros mensuales vía <strong>Wompi (PSE, Tarjeta o Nequi)</strong></span>
+            </div>
+            <div className="flex items-center gap-3">
+              <Check className="w-5 h-5 text-emerald-400 shrink-0" />
+              <span>Sin cláusulas de permanencia (cancela cuando quieras)</span>
+            </div>
+          </div>
+
+          <Link
+            href="/registro"
+            className="w-full py-5 rounded-2xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-lg text-center block transition-all shadow-xl shadow-emerald-500/30 hover:scale-[1.02] active:scale-[0.98]"
+          >
+            Comenzar mi Turno de Prueba Gratis (24h)
+          </Link>
           
-          {/* PLAN MENSUAL */}
-          <div className="p-8 rounded-3xl bg-slate-900 border border-slate-800 flex flex-col justify-between">
-            <div>
-              <h3 className="text-xl font-bold text-white mb-2">Plan Mensual Flexible</h3>
-              <p className="text-xs text-slate-400 mb-6">Ideal para empezar y probar en tu tienda.</p>
-              
-              <div className="mb-6">
-                <span className="text-5xl font-black text-white">$29.900</span>
-                <span className="text-slate-400 text-sm"> COP / mes</span>
-              </div>
-
-              <ul className="space-y-3 text-sm text-slate-300 mb-8">
-                <li className="flex items-center gap-2">✓ 1 Teléfono Receptor (Nequi / Daviplata)</li>
-                <li className="flex items-center gap-2">✓ Pantalla de Caja POS Ilimitada</li>
-                <li className="flex items-center gap-2">✓ Alertas de Voz en Español en Alta Fidelidad</li>
-                <li className="flex items-center gap-2">✓ Soporte por WhatsApp en Colombia</li>
-              </ul>
-            </div>
-
-            <Link
-              href="/descargar"
-              className="w-full py-4 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold text-center block transition-all"
-            >
-              Comenzar Prueba Gratis (7 Días)
-            </Link>
-          </div>
-
-          {/* PLAN ANUAL */}
-          <div className="p-8 rounded-3xl bg-gradient-to-b from-slate-900 to-emerald-950/40 border-2 border-emerald-500 flex flex-col justify-between relative shadow-2xl shadow-emerald-950/80">
-            <div className="absolute -top-3.5 right-6 px-3 py-1 rounded-full bg-emerald-500 text-slate-950 font-black text-xs uppercase tracking-wider">
-              Ahorra 30%
-            </div>
-
-            <div>
-              <h3 className="text-xl font-bold text-white mb-2">Plan Anual Blindado</h3>
-              <p className="text-xs text-slate-400 mb-6">Tranquilidad todo el año para tu negocio.</p>
-              
-              <div className="mb-6">
-                <span className="text-5xl font-black text-emerald-400">$249.000</span>
-                <span className="text-slate-400 text-sm"> COP / año</span>
-              </div>
-
-              <ul className="space-y-3 text-sm text-slate-200 mb-8">
-                <li className="flex items-center gap-2">✓ Todo lo del plan mensual</li>
-                <li className="flex items-center gap-2">✓ Multi-Caja (Hasta 3 cajas simultáneas)</li>
-                <li className="flex items-center gap-2">✓ Soporte VIP prioritario</li>
-                <li className="flex items-center gap-2">✓ Actualizaciones automáticas de por vida</li>
-              </ul>
-            </div>
-
-            <Link
-              href="/descargar"
-              className="w-full py-4 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-center block transition-all shadow-lg shadow-emerald-500/25"
-            >
-              Activar Plan Anual
-            </Link>
-          </div>
-
+          <p className="text-center text-xs text-slate-500 mt-4">
+            Activación inmediata • No requiere tarjeta de crédito para iniciar
+          </p>
         </div>
       </section>
 
-      {/* 7. FOOTER */}
+      {/* 6. FOOTER */}
       <footer className="border-t border-slate-800/80 bg-slate-950 py-12 px-6 text-center text-xs text-slate-500">
         <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-2">
             <span className="font-bold text-slate-300">ConfirmaYa.lat</span>
-            <span>— Hecho en Colombia con tecnología en la nube.</span>
+            <span>— La solución anti-estafas para comercios en Colombia.</span>
           </div>
           <div className="flex items-center gap-6">
-            <Link href="/pos" className="hover:text-slate-300">Pantalla de Caja</Link>
+            <Link href="/login" className="hover:text-slate-300">Iniciar Sesión</Link>
+            <Link href="/registro" className="hover:text-slate-300">Registro</Link>
             <Link href="/descargar" className="hover:text-slate-300">Descargar APK</Link>
             <a href="https://wompi.co" target="_blank" rel="noopener noreferrer" className="hover:text-slate-300">Pagos Seguros con Wompi</a>
           </div>
