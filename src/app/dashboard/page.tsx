@@ -376,7 +376,7 @@ export default function DashboardPage() {
         isOpen={showQr}
         onClose={() => setShowQr(false)}
         apiKey={device?.device_api_key || 'key_demo'}
-        endpointUrl="https://xxmvyhqoyqybrcuytmcb.supabase.co/functions/v1/ingest-transfer"
+        endpointUrl="https://www.confirmaya.lat/api/ingest"
         storeName={org?.name || 'Mi Negocio'}
       />
 
