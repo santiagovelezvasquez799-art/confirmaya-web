@@ -14,7 +14,10 @@ import {
   Clock, 
   ShieldCheck,
   RotateCw,
-  Sparkles
+  Sparkles,
+  Search,
+  AlertCircle,
+  X
 } from 'lucide-react';
 
 interface Transaction {
@@ -68,6 +71,58 @@ export default function CashierDashboard({ organizationId = 'org-demo' }: { orga
   });
 
   const { audioEnabled, enableAudio, triggerAlert } = useSoundAlert();
+  const [showManualModal, setShowManualModal] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [manualSearchResult, setManualSearchResult] = useState<{ found: boolean; tx?: Transaction } | null>(null);
+  const [isSearching, setIsSearching] = useState(false);
+
+  const handleManualSearch = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    const q = searchQuery.trim().toLowerCase();
+    if (!q) return;
+
+    setIsSearching(true);
+    const numericQ = q.replace(/[^0-9]/g, '');
+    const searchAmount = numericQ ? parseInt(numericQ, 10) : null;
+
+    // 1. Buscar primero en transacciones en memoria
+    let match = transactions.find((tx) => {
+      const matchRef = tx.reference_code && tx.reference_code.toLowerCase().includes(q);
+      const matchSender = tx.sender_name && tx.sender_name.toLowerCase().includes(q);
+      const matchAmount = searchAmount !== null && tx.amount === searchAmount;
+      return matchRef || matchSender || matchAmount;
+    });
+
+    // 2. Si no está en memoria y Supabase está configurado, consultar Supabase
+    if (!match && isSupabaseConfigured) {
+      try {
+        const { data } = await supabase
+          .from('transactions')
+          .select('*')
+          .eq('organization_id', organizationId)
+          .order('created_at', { ascending: false })
+          .limit(50);
+
+        if (data) {
+          match = data.find((tx: Transaction) => {
+            const matchRef = tx.reference_code && tx.reference_code.toLowerCase().includes(q);
+            const matchSender = tx.sender_name && tx.sender_name.toLowerCase().includes(q);
+            const matchAmount = searchAmount !== null && tx.amount === searchAmount;
+            return matchRef || matchSender || matchAmount;
+          });
+        }
+      } catch (err) {
+        console.error('Error buscando transacción:', err);
+      }
+    }
+
+    setIsSearching(false);
+    if (match) {
+      setManualSearchResult({ found: true, tx: match });
+    } else {
+      setManualSearchResult({ found: false });
+    }
+  };
 
   // Suscripción Realtime solo si Supabase está configurado con claves reales
   useEffect(() => {
@@ -211,6 +266,19 @@ export default function CashierDashboard({ organizationId = 'org-demo' }: { orga
             <span>{audioEnabled ? 'Voz Activa' : 'Activar Sonido'}</span>
           </button>
 
+          {/* Botón Verificar Comprobante Manual */}
+          <button
+            onClick={() => {
+              setSearchQuery('');
+              setManualSearchResult(null);
+              setShowManualModal(true);
+            }}
+            className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-bold text-slate-200 border border-slate-700 transition-all"
+          >
+            <Search className="w-4 h-4 text-emerald-400" />
+            <span>Verificar Manual</span>
+          </button>
+
           {/* Botón Simular Prueba */}
           <button
             onClick={handleTestAlert}
@@ -335,6 +403,140 @@ export default function CashierDashboard({ organizationId = 'org-demo' }: { orga
         </section>
 
       </main>
+
+      {/* MODAL DE VERIFICACIÓN MANUAL DE COMPROBANTES */}
+      {showManualModal && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
+          <div className="bg-slate-900 border border-slate-700/80 rounded-3xl max-w-lg w-full p-6 shadow-2xl relative overflow-hidden flex flex-col gap-5 animate-in fade-in zoom-in-95 duration-200">
+            
+            {/* Header del Modal */}
+            <div className="flex items-center justify-between border-b border-slate-800 pb-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400">
+                  <Search className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-black text-white">Verificar Comprobante</h3>
+                  <p className="text-xs text-slate-400">Confirmación manual anti-estafas</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowManualModal(false)}
+                className="p-2 text-slate-400 hover:text-white rounded-xl hover:bg-slate-800 transition-all"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Formulario de búsqueda */}
+            <form onSubmit={handleManualSearch} className="flex flex-col gap-3">
+              <label className="text-xs font-semibold text-slate-300">
+                Ingresa el Monto, Referencia o Nombre del Remitente:
+              </label>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Ej: 15000, STIVEN o M123456"
+                  className="flex-1 bg-slate-950 border border-slate-700 rounded-xl px-4 py-3 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500 transition-colors"
+                  autoFocus
+                />
+                <button
+                  type="submit"
+                  disabled={isSearching || !searchQuery.trim()}
+                  className="px-5 py-3 rounded-xl bg-emerald-500 hover:bg-emerald-400 disabled:opacity-50 font-bold text-sm text-slate-950 shadow-lg shadow-emerald-500/20 transition-all"
+                >
+                  {isSearching ? 'Buscando...' : 'Buscar'}
+                </button>
+              </div>
+            </form>
+
+            {/* Resultados de la búsqueda */}
+            {manualSearchResult && (
+              <div className="pt-2">
+                {manualSearchResult.found && manualSearchResult.tx ? (
+                  <div className="bg-emerald-950/40 border-2 border-emerald-500/50 rounded-2xl p-4 flex flex-col gap-3">
+                    <div className="flex items-center gap-2 text-emerald-400 font-bold text-sm">
+                      <CheckCircle2 className="w-5 h-5 text-emerald-400" />
+                      <span>¡PAGO AUTÉNTICO CONFIRMADO!</span>
+                    </div>
+
+                    <div className="bg-slate-900/90 rounded-xl p-3 border border-emerald-900/50 flex flex-col gap-2">
+                      <div className="flex justify-between items-center">
+                        <span className="text-xs text-slate-400">Monto verificado:</span>
+                        <span className="text-xl font-black text-emerald-400">
+                          {formatCOP(manualSearchResult.tx.amount)}
+                        </span>
+                      </div>
+                      <div className="flex justify-between items-center text-xs">
+                        <span className="text-slate-400">Remitente:</span>
+                        <span className="font-bold text-white">{manualSearchResult.tx.sender_name}</span>
+                      </div>
+                      <div className="flex justify-between items-center text-xs">
+                        <span className="text-slate-400">Billetera / Banco:</span>
+                        <span className="font-bold uppercase text-emerald-300">
+                          {manualSearchResult.tx.source}
+                        </span>
+                      </div>
+                      {manualSearchResult.tx.reference_code && (
+                        <div className="flex justify-between items-center text-xs">
+                          <span className="text-slate-400">Comprobante / Ref:</span>
+                          <span className="font-mono text-slate-300">
+                            {manualSearchResult.tx.reference_code}
+                          </span>
+                        </div>
+                      )}
+                      <div className="flex justify-between items-center text-xs">
+                        <span className="text-slate-400">Hora recibida:</span>
+                        <span className="text-slate-300">
+                          {new Date(manualSearchResult.tx.created_at).toLocaleTimeString('es-CO')}
+                        </span>
+                      </div>
+                    </div>
+
+                    <button
+                      onClick={() => {
+                        if (manualSearchResult.tx) {
+                          setLatestTx(manualSearchResult.tx);
+                          triggerAlert(manualSearchResult.tx.amount, manualSearchResult.tx.sender_name, manualSearchResult.tx.source.toUpperCase());
+                          setShowManualModal(false);
+                        }
+                      }}
+                      className="w-full py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-xs uppercase tracking-wider transition-all"
+                    >
+                      Mostrar y Vocear en Pantalla
+                    </button>
+                  </div>
+                ) : (
+                  <div className="bg-rose-950/30 border-2 border-rose-500/50 rounded-2xl p-4 flex flex-col gap-3">
+                    <div className="flex items-center gap-2 text-rose-400 font-bold text-sm">
+                      <AlertCircle className="w-5 h-5 text-rose-400" />
+                      <span>NO SE ENCONTRÓ NINGÚN PAGO</span>
+                    </div>
+                    <p className="text-xs text-slate-300 leading-relaxed">
+                      No hay ningún registro con el término &ldquo;<strong className="text-rose-300">{searchQuery}</strong>&rdquo; recibido en las cuentas vinculadas.
+                    </p>
+                    <div className="bg-rose-900/30 rounded-xl p-3 border border-rose-800/40 text-xs text-rose-200">
+                      🚨 <strong>Alerta de Seguridad:</strong> Si el cliente afirma que ya pagó y muestra una captura o comprobante en su pantalla, pídele amablemente que te muestre los <strong>Movimientos dentro de la app</strong>. Cuidado con capturas falsas o editadas.
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {!manualSearchResult && (
+              <div className="text-xs text-slate-400 bg-slate-950/50 rounded-2xl p-4 border border-slate-800/60 flex flex-col gap-2">
+                <span className="font-semibold text-slate-300">💡 ¿Cuándo usar la verificación manual?</span>
+                <p>
+                  Si la notificación automática se retrasa por la señal del celular, puedes digitar aquí los últimos dígitos de la referencia o el monto exacto para confirmar si el dinero ya impactó en el sistema.
+                </p>
+              </div>
+            )}
+
+          </div>
+        </div>
+      )}
     </div>
   );
 }
