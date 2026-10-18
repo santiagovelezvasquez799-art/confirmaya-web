@@ -300,11 +300,12 @@ export default function LandingPage() {
             <span className="font-bold text-slate-300">ConfirmaYa.lat</span>
             <span>— La solución anti-estafas para comercios en Colombia.</span>
           </div>
-          <div className="flex items-center gap-6">
+          <div className="flex items-center flex-wrap gap-4 sm:gap-6 justify-center">
             <Link href="/login" className="hover:text-slate-300">Iniciar Sesión</Link>
             <Link href="/registro" className="hover:text-slate-300">Registro</Link>
             <Link href="/descargar" className="hover:text-slate-300">Descargar APK</Link>
-            <a href="https://wompi.co" target="_blank" rel="noopener noreferrer" className="hover:text-slate-300">Pagos Seguros con Wompi</a>
+            <Link href="/privacidad" className="hover:text-emerald-400">Privacidad y Habeas Data</Link>
+            <Link href="/terminos" className="hover:text-emerald-400">Términos y Condiciones</Link>
           </div>
         </div>
       </footer>

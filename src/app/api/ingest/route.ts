@@ -43,6 +43,27 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json();
+
+    // 1.1 Si es un Heartbeat periódico de telemetría (batería y conectividad)
+    if (body.type === "heartbeat" || body.is_heartbeat) {
+      await supabase
+        .from("sensor_devices")
+        .update({
+          is_online: true,
+          last_heartbeat_at: new Date().toISOString(),
+          battery_level: body.battery_level ?? 100,
+          is_charging: body.is_charging ?? false,
+        })
+        .eq("id", device.id);
+
+      return NextResponse.json({
+        status: "heartbeat_ack",
+        message: "Dispositivo en línea y batería sincronizada",
+        battery_level: body.battery_level,
+        is_charging: body.is_charging,
+      });
+    }
+
     if (!body.amount || body.amount <= 0) {
       return NextResponse.json({ error: "Monto invalido" }, { status: 400 });
     }

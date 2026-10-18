@@ -172,10 +172,21 @@ export default function RegistroPage() {
               </div>
             </div>
 
+            <p className="text-[11px] text-slate-400 leading-snug">
+              Al hacer clic en &ldquo;Comenzar Prueba Gratis&rdquo;, declaras conocer y aceptar los{' '}
+              <Link href="/terminos" target="_blank" className="text-emerald-400 hover:underline">
+                Términos del Servicio
+              </Link>{' '}
+              y la{' '}
+              <Link href="/privacidad" target="_blank" className="text-emerald-400 hover:underline">
+                Política de Tratamiento de Datos (Ley 1581 de 2012)
+              </Link>.
+            </p>
+
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-4 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-base shadow-xl shadow-emerald-500/25 transition-all flex items-center justify-center gap-2 mt-6 disabled:opacity-50"
+              className="w-full py-4 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-base shadow-xl shadow-emerald-500/25 transition-all flex items-center justify-center gap-2 mt-4 disabled:opacity-50"
             >
               {loading ? (
                 <>

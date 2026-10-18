@@ -12,13 +12,18 @@ import {
   Battery, 
   BatteryCharging, 
   Clock, 
-  ShieldCheck,
-  RotateCw,
-  Sparkles,
-  Search,
-  AlertCircle,
-  X
+  ShieldCheck, 
+  RotateCw, 
+  Sparkles, 
+  Search, 
+  AlertCircle, 
+  X,
+  QrCode,
+  Printer,
+  Download,
+  BarChart3
 } from 'lucide-react';
+import PairingModal from '@/components/PairingModal';
 
 interface Transaction {
   id: string;
@@ -72,9 +77,74 @@ export default function CashierDashboard({ organizationId = 'org-demo' }: { orga
 
   const { audioEnabled, enableAudio, triggerAlert } = useSoundAlert();
   const [showManualModal, setShowManualModal] = useState(false);
+  const [showPairingModal, setShowPairingModal] = useState(false);
+  const [showSummaryModal, setShowSummaryModal] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [manualSearchResult, setManualSearchResult] = useState<{ found: boolean; tx?: Transaction } | null>(null);
   const [isSearching, setIsSearching] = useState(false);
+
+  // Estadísticas del día
+  const totalToday = transactions.reduce((sum, tx) => sum + (tx.amount || 0), 0);
+  const countToday = transactions.length;
+  const nequiTotal = transactions.filter(t => t.source === 'nequi').reduce((sum, t) => sum + t.amount, 0);
+  const daviplataTotal = transactions.filter(t => t.source === 'daviplata').reduce((sum, t) => sum + t.amount, 0);
+  const bancolombiaTotal = transactions.filter(t => t.source === 'bancolombia').reduce((sum, t) => sum + t.amount, 0);
+
+  const formatCOP = (val: number) =>
+    new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(val);
+
+  const handlePrintSummary = () => {
+    const printWindow = window.open('', '', 'width=400,height=600');
+    if (!printWindow) return;
+    printWindow.document.write(`
+      <html>
+        <head>
+          <title>Cierre de Caja - ConfirmaYa</title>
+          <style>
+            body { font-family: monospace; font-size: 13px; width: 280px; margin: 0 auto; padding: 12px; color: #000; }
+            .center { text-align: center; }
+            .bold { font-weight: bold; }
+            .line { border-top: 1px dashed #000; margin: 8px 0; }
+            .row { display: flex; justify-content: space-between; margin: 4px 0; }
+          </style>
+        </head>
+        <body>
+          <div class="center bold" style="font-size: 16px;">CONFIRMAYA</div>
+          <div class="center">CIERRE DIARIO DE CAJA</div>
+          <div class="center">${new Date().toLocaleDateString('es-CO')} - ${new Date().toLocaleTimeString('es-CO')}</div>
+          <div class="line"></div>
+          <div class="row"><span>TOTAL DEL DÍA:</span><span class="bold">${formatCOP(totalToday)}</span></div>
+          <div class="row"><span>PAGOS RECIBIDOS:</span><span class="bold">${countToday}</span></div>
+          <div class="line"></div>
+          <div class="row"><span>Nequi:</span><span>${formatCOP(nequiTotal)}</span></div>
+          <div class="row"><span>Daviplata:</span><span>${formatCOP(daviplataTotal)}</span></div>
+          <div class="row"><span>Bancolombia:</span><span>${formatCOP(bancolombiaTotal)}</span></div>
+          <div class="line"></div>
+          <div class="center" style="font-size: 10px; margin-top: 15px;">✓ Pagos verificados en tiempo real</div>
+          <script>
+            window.onload = function() { window.print(); window.close(); }
+          </script>
+        </body>
+      </html>
+    `);
+    printWindow.document.close();
+  };
+
+  const handleExportCSV = () => {
+    const headers = "ID,Fecha,Hora,Billetera,Monto,Remitente,Referencia,Estado\n";
+    const rows = transactions.map(t => {
+      const date = new Date(t.created_at);
+      return `"${t.id}","${date.toLocaleDateString('es-CO')}","${date.toLocaleTimeString('es-CO')}","${t.source}","${t.amount}","${t.sender_name}","${t.reference_code || ''}","${t.status}"`;
+    }).join("\n");
+    const blob = new Blob([headers + rows], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", `cierre_caja_${new Date().toISOString().split('T')[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
 
   const handleManualSearch = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
@@ -175,8 +245,55 @@ export default function CashierDashboard({ organizationId = 'org-demo' }: { orga
       )
       .subscribe();
 
+    // Consultar estado inicial del dispositivo
+    const fetchDevice = async () => {
+      try {
+        const { data } = await supabase
+          .from('sensor_devices')
+          .select('*')
+          .limit(1)
+          .single();
+        if (data) {
+          setDevice({
+            device_name: data.device_name || 'Celular Mostrador',
+            is_online: data.is_online ?? true,
+            battery_level: data.battery_level ?? 100,
+            is_charging: data.is_charging ?? false,
+            last_heartbeat_at: data.last_heartbeat_at || new Date().toISOString(),
+          });
+        }
+      } catch (e) {}
+    };
+    fetchDevice();
+
+    // Escuchar actualizaciones de batería y heartbeat en tiempo real
+    const deviceChannel = supabase
+      .channel('sensor_devices_live')
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'sensor_devices',
+        },
+        (payload) => {
+          const updated = payload.new as any;
+          if (updated) {
+            setDevice({
+              device_name: updated.device_name || 'Celular Mostrador',
+              is_online: updated.is_online ?? true,
+              battery_level: updated.battery_level ?? 100,
+              is_charging: updated.is_charging ?? false,
+              last_heartbeat_at: updated.last_heartbeat_at || new Date().toISOString(),
+            });
+          }
+        }
+      )
+      .subscribe();
+
     return () => {
       supabase.removeChannel(channel);
+      supabase.removeChannel(deviceChannel);
     };
   }, [organizationId, triggerAlert]);
 
@@ -221,9 +338,6 @@ export default function CashierDashboard({ organizationId = 'org-demo' }: { orga
     }
   };
 
-  const formatCOP = (val: number) =>
-    new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(val);
-
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans">
       {/* BARRA SUPERIOR DE ESTADO */}
@@ -241,29 +355,53 @@ export default function CashierDashboard({ organizationId = 'org-demo' }: { orga
         </div>
 
         {/* ESTADO DEL CELULAR RECEPTOR & ACCIONES */}
-        <div className="flex items-center flex-wrap gap-3">
-          {/* Indicador de Teléfono */}
-          <div className="flex items-center gap-2.5 px-3.5 py-2 rounded-xl bg-slate-800/80 border border-slate-700/80 text-xs text-slate-300">
+        <div className="flex items-center flex-wrap gap-2.5">
+          {/* Indicador de Teléfono con Alerta de Batería Baja */}
+          <div className={`flex items-center gap-2 px-3 py-2 rounded-xl border text-xs ${
+            device.battery_level <= 20 && !device.is_charging
+              ? 'bg-rose-950/60 border-rose-500/60 text-rose-300 animate-pulse'
+              : 'bg-slate-800/80 border-slate-700/80 text-slate-300'
+          }`}>
             <Smartphone className="w-4 h-4 text-emerald-400" />
             <span className="hidden sm:inline font-medium">{device.device_name}</span>
-            <div className="flex items-center gap-1 font-bold text-emerald-400">
+            <div className={`flex items-center gap-1 font-bold ${device.battery_level <= 20 && !device.is_charging ? 'text-rose-400' : 'text-emerald-400'}`}>
               {device.is_charging ? <BatteryCharging className="w-4 h-4" /> : <Battery className="w-4 h-4" />}
               {device.battery_level}%
             </div>
-            <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
+            <span className={`w-2 h-2 rounded-full ${device.is_online ? 'bg-emerald-400 animate-pulse' : 'bg-rose-500'}`}></span>
           </div>
+
+          {/* Botón Vincular Celular por QR */}
+          <button
+            onClick={() => setShowPairingModal(true)}
+            className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-bold text-slate-200 border border-slate-700 transition-all"
+            title="Escanear código QR para conectar el teléfono receptor"
+          >
+            <QrCode className="w-4 h-4 text-emerald-400" />
+            <span className="hidden md:inline">Vincular Celular</span>
+          </button>
+
+          {/* Botón Cierre de Caja del Día */}
+          <button
+            onClick={() => setShowSummaryModal(true)}
+            className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-bold text-slate-200 border border-slate-700 transition-all"
+            title="Ver total recaudado hoy y ticket de cierre"
+          >
+            <BarChart3 className="w-4 h-4 text-blue-400" />
+            <span className="hidden md:inline">Cierre de Caja</span>
+          </button>
 
           {/* Botón de Sonido */}
           <button
             onClick={enableAudio}
-            className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold border transition-all ${
+            className={`flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-bold border transition-all ${
               audioEnabled 
                 ? 'bg-emerald-500/20 border-emerald-500/40 text-emerald-300 shadow-sm' 
                 : 'bg-amber-500/20 border-amber-500/40 text-amber-300 animate-pulse'
             }`}
           >
             {audioEnabled ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
-            <span>{audioEnabled ? 'Voz Activa' : 'Activar Sonido'}</span>
+            <span>{audioEnabled ? 'Voz Activa' : 'Activar Voz'}</span>
           </button>
 
           {/* Botón Verificar Comprobante Manual */}
@@ -273,7 +411,7 @@ export default function CashierDashboard({ organizationId = 'org-demo' }: { orga
               setManualSearchResult(null);
               setShowManualModal(true);
             }}
-            className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-bold text-slate-200 border border-slate-700 transition-all"
+            className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-bold text-slate-200 border border-slate-700 transition-all"
           >
             <Search className="w-4 h-4 text-emerald-400" />
             <span>Verificar Manual</span>
@@ -282,10 +420,10 @@ export default function CashierDashboard({ organizationId = 'org-demo' }: { orga
           {/* Botón Simular Prueba */}
           <button
             onClick={handleTestAlert}
-            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-xs font-bold text-white shadow-lg shadow-emerald-900/30 transition-all active:scale-95"
+            className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-xs font-bold text-white shadow-lg shadow-emerald-900/30 transition-all active:scale-95"
           >
             <Sparkles className="w-4 h-4" />
-            <span>Probar Pago en Vivo</span>
+            <span className="hidden sm:inline">Probar Pago</span>
           </button>
         </div>
       </header>
@@ -534,6 +672,84 @@ export default function CashierDashboard({ organizationId = 'org-demo' }: { orga
               </div>
             )}
 
+          </div>
+        </div>
+      )}
+
+      {/* MODAL DE EMPAREJAMIENTO POR CÓDIGO QR */}
+      <PairingModal
+        isOpen={showPairingModal}
+        onClose={() => setShowPairingModal(false)}
+        apiKey="key_confirmaya_demo_dispositivo_123"
+        endpointUrl="https://www.confirmaya.lat/api/ingest"
+        storeName="Mi Comercio"
+      />
+
+      {/* MODAL DE CIERRE DE CAJA DEL DÍA */}
+      {showSummaryModal && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
+          <div className="bg-slate-900 border border-slate-700/80 rounded-3xl max-w-md w-full p-6 shadow-2xl relative overflow-hidden flex flex-col gap-5 animate-in fade-in zoom-in-95 duration-200">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 rounded-2xl bg-blue-500/10 border border-blue-500/20 text-blue-400">
+                  <BarChart3 className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-black text-white">Cierre Diario de Caja</h3>
+                  <p className="text-xs text-slate-400">{new Date().toLocaleDateString('es-CO', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowSummaryModal(false)}
+                className="p-2 text-slate-400 hover:text-white rounded-xl hover:bg-slate-800 transition-all"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Total General */}
+            <div className="bg-slate-950/70 border border-slate-800 rounded-2xl p-5 text-center">
+              <span className="text-xs uppercase tracking-wider text-slate-400 font-bold">Total Recaudado Hoy</span>
+              <p className="text-3xl font-black text-emerald-400 mt-1">{formatCOP(totalToday)}</p>
+              <span className="text-xs text-slate-500 mt-1 block">{countToday} transferencias confirmadas</span>
+            </div>
+
+            {/* Desglose por Billetera */}
+            <div className="space-y-2">
+              <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Desglose por Billetera</span>
+              <div className="bg-slate-950/50 rounded-xl p-3 border border-slate-800/80 space-y-2 text-xs">
+                <div className="flex justify-between items-center">
+                  <span className="text-slate-300 font-semibold">Nequi:</span>
+                  <span className="font-bold text-emerald-400">{formatCOP(nequiTotal)}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-slate-300 font-semibold">Daviplata:</span>
+                  <span className="font-bold text-emerald-400">{formatCOP(daviplataTotal)}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-slate-300 font-semibold">Bancolombia:</span>
+                  <span className="font-bold text-emerald-400">{formatCOP(bancolombiaTotal)}</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Acciones: Imprimir Ticket o Exportar CSV */}
+            <div className="grid grid-cols-2 gap-3 pt-2">
+              <button
+                onClick={handlePrintSummary}
+                className="flex items-center justify-center gap-2 py-3 px-4 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold border border-slate-700 transition-all shadow-sm"
+              >
+                <Printer className="w-4 h-4 text-emerald-400" />
+                <span>Ticket Térmico</span>
+              </button>
+              <button
+                onClick={handleExportCSV}
+                className="flex items-center justify-center gap-2 py-3 px-4 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold border border-slate-700 transition-all shadow-sm"
+              >
+                <Download className="w-4 h-4 text-blue-400" />
+                <span>Exportar CSV</span>
+              </button>
+            </div>
           </div>
         </div>
       )}
