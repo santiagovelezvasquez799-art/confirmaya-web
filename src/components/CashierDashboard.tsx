@@ -21,7 +21,13 @@ import {
   QrCode,
   Printer,
   Download,
-  BarChart3
+  BarChart3,
+  Share2,
+  DollarSign,
+  Filter,
+  Trash2,
+  Calendar,
+  TrendingUp
 } from 'lucide-react';
 import PairingModal from '@/components/PairingModal';
 
@@ -43,34 +49,14 @@ interface SensorDevice {
   last_heartbeat_at: string;
 }
 
-const INITIAL_DEMO_TRANSACTIONS: Transaction[] = [
-  {
-    id: 'tx-1',
-    source: 'nequi',
-    amount: 35000,
-    sender_name: 'Carlos Mario Ospina',
-    reference_code: 'M884679',
-    status: 'unclaimed',
-    created_at: new Date(Date.now() - 1000 * 60 * 2).toISOString(),
-  },
-  {
-    id: 'tx-2',
-    source: 'daviplata',
-    amount: 82000,
-    sender_name: 'Andrea Gómez Restrepo',
-    reference_code: 'D901243',
-    status: 'claimed',
-    created_at: new Date(Date.now() - 1000 * 60 * 15).toISOString(),
-  },
-];
-
 export default function CashierDashboard({ organizationId = 'org-demo' }: { organizationId?: string }) {
-  const [transactions, setTransactions] = useState<Transaction[]>(INITIAL_DEMO_TRANSACTIONS);
-  const [latestTx, setLatestTx] = useState<Transaction | null>(INITIAL_DEMO_TRANSACTIONS[0]);
+  // Arreglo arranca limpio desde cero hoy
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [latestTx, setLatestTx] = useState<Transaction | null>(null);
   const [device, setDevice] = useState<SensorDevice>({
     device_name: 'Celular Mostrador (Nequi)',
     is_online: true,
-    battery_level: 86,
+    battery_level: 100,
     is_charging: true,
     last_heartbeat_at: new Date().toISOString(),
   });
@@ -83,44 +69,118 @@ export default function CashierDashboard({ organizationId = 'org-demo' }: { orga
   const [manualSearchResult, setManualSearchResult] = useState<{ found: boolean; tx?: Transaction } | null>(null);
   const [isSearching, setIsSearching] = useState(false);
 
-  // Estadísticas del día
-  const totalToday = transactions.reduce((sum, tx) => sum + (tx.amount || 0), 0);
-  const countToday = transactions.length;
-  const nequiTotal = transactions.filter(t => t.source === 'nequi').reduce((sum, t) => sum + t.amount, 0);
-  const daviplataTotal = transactions.filter(t => t.source === 'daviplata').reduce((sum, t) => sum + t.amount, 0);
-  const bancolombiaTotal = transactions.filter(t => t.source === 'bancolombia').reduce((sum, t) => sum + t.amount, 0);
+  // Herramientas avanzadas de Cierre de Caja
+  const [cashBase, setCashBase] = useState<number>(50000); // Base de efectivo para dar cambio
+  const [filterView, setFilterView] = useState<'today' | 'all'>('today');
+  const [excludeDemos, setExcludeDemos] = useState<boolean>(true); // Excluir pruebas simuladas
+
+  const isToday = (dateStr: string) => {
+    try {
+      const d = new Date(dateStr);
+      const now = new Date();
+      return d.getDate() === now.getDate() &&
+             d.getMonth() === now.getMonth() &&
+             d.getFullYear() === now.getFullYear();
+    } catch (e) {
+      return true;
+    }
+  };
+
+  const filteredTransactions = transactions.filter(t => {
+    if (filterView === 'today' && !isToday(t.created_at)) return false;
+    if (excludeDemos && (t.id.startsWith('demo-') || t.id.startsWith('tx-') || t.sender_name.toLowerCase().includes('prueba'))) return false;
+    return true;
+  });
+
+  // Métricas de Cierre de Caja
+  const totalDigital = filteredTransactions.reduce((sum, tx) => sum + (tx.amount || 0), 0);
+  const countDigital = filteredTransactions.length;
+  const grandTotal = totalDigital + cashBase;
+  const averageTicket = countDigital > 0 ? Math.round(totalDigital / countDigital) : 0;
+  const highestTx = filteredTransactions.length > 0 ? filteredTransactions.reduce((prev, curr) => (curr.amount > prev.amount ? curr : prev), filteredTransactions[0]) : null;
+
+  const nequiTxs = filteredTransactions.filter(t => t.source === 'nequi');
+  const nequiTotal = nequiTxs.reduce((sum, t) => sum + t.amount, 0);
+  const daviplataTxs = filteredTransactions.filter(t => t.source === 'daviplata');
+  const daviplataTotal = daviplataTxs.reduce((sum, t) => sum + t.amount, 0);
+  const bancolombiaTxs = filteredTransactions.filter(t => t.source === 'bancolombia');
+  const bancolombiaTotal = bancolombiaTxs.reduce((sum, t) => sum + t.amount, 0);
 
   const formatCOP = (val: number) =>
     new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(val);
 
+  // Reiniciar turno para la tarde o una nueva jornada limpia
+  const handleResetShift = () => {
+    if (confirm('¿Deseas iniciar un nuevo turno de caja en $0 COP? Las transferencias anteriores quedarán archivadas en la base de datos.')) {
+      setTransactions([]);
+      setLatestTx(null);
+      setShowSummaryModal(false);
+    }
+  };
+
+  // Enviar Cierre de Caja directamente por WhatsApp al Dueño / Administrador
+  const handleShareWhatsApp = () => {
+    const dateStr = new Date().toLocaleDateString('es-CO', { day: '2-digit', month: 'short', year: 'numeric' });
+    const timeStr = new Date().toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' });
+    const text = `📊 *CIERRE DIARIO DE CAJA - CONFIRMAYA*
+🏪 *Sede / Caja 1*
+📅 *Fecha:* ${dateStr} - ${timeStr}
+
+💵 *Base de Efectivo:* ${formatCOP(cashBase)}
+--------------------------------
+🟣 *Nequi:* ${formatCOP(nequiTotal)} (${nequiTxs.length} pagos)
+🔴 *Daviplata:* ${formatCOP(daviplataTotal)} (${daviplataTxs.length} pagos)
+🟡 *Bancolombia:* ${formatCOP(bancolombiaTotal)} (${bancolombiaTxs.length} pagos)
+--------------------------------
+💰 *TOTAL DIGITAL:* ${formatCOP(totalDigital)}
+🧾 *Total Pagos Digitales:* ${countDigital} transacciones
+🎯 *Ticket Promedio:* ${formatCOP(averageTicket)}
+💵 *TOTAL CAJA (+ Base Efectivo):* ${formatCOP(grandTotal)}
+--------------------------------
+✅ *Verificado 100% Anti-Fraude con ConfirmaYa.lat*`;
+
+    const encoded = encodeURIComponent(text);
+    window.open(`https://api.whatsapp.com/send?text=${encoded}`, '_blank');
+  };
+
+  // Impresión en formato de Ticket Térmico estándar ESC/POS (58mm / 80mm)
   const handlePrintSummary = () => {
-    const printWindow = window.open('', '', 'width=400,height=600');
+    const printWindow = window.open('', '', 'width=400,height=650');
     if (!printWindow) return;
     printWindow.document.write(`
       <html>
         <head>
           <title>Cierre de Caja - ConfirmaYa</title>
           <style>
-            body { font-family: monospace; font-size: 13px; width: 280px; margin: 0 auto; padding: 12px; color: #000; }
+            body { font-family: monospace; font-size: 12px; width: 280px; margin: 0 auto; padding: 12px; color: #000; }
             .center { text-align: center; }
             .bold { font-weight: bold; }
             .line { border-top: 1px dashed #000; margin: 8px 0; }
-            .row { display: flex; justify-content: space-between; margin: 4px 0; }
+            .row { display: flex; justify-content: space-between; margin: 4px 0; font-size: 12px; }
+            .big { font-size: 15px; }
+            .footer-sign { margin-top: 35px; border-top: 1px solid #000; text-align: center; font-size: 11px; padding-top: 4px; }
           </style>
         </head>
         <body>
-          <div class="center bold" style="font-size: 16px;">CONFIRMAYA</div>
-          <div class="center">CIERRE DIARIO DE CAJA</div>
+          <div class="center bold big">CONFIRMAYA</div>
+          <div class="center">COMPROBANTE DE CIERRE DE CAJA</div>
           <div class="center">${new Date().toLocaleDateString('es-CO')} - ${new Date().toLocaleTimeString('es-CO')}</div>
           <div class="line"></div>
-          <div class="row"><span>TOTAL DEL DÍA:</span><span class="bold">${formatCOP(totalToday)}</span></div>
-          <div class="row"><span>PAGOS RECIBIDOS:</span><span class="bold">${countToday}</span></div>
+          <div class="row"><span>Base Efectivo:</span><span class="bold">${formatCOP(cashBase)}</span></div>
           <div class="line"></div>
-          <div class="row"><span>Nequi:</span><span>${formatCOP(nequiTotal)}</span></div>
-          <div class="row"><span>Daviplata:</span><span>${formatCOP(daviplataTotal)}</span></div>
-          <div class="row"><span>Bancolombia:</span><span>${formatCOP(bancolombiaTotal)}</span></div>
+          <div class="row"><span>Nequi:</span><span>${formatCOP(nequiTotal)} (${nequiTxs.length})</span></div>
+          <div class="row"><span>Daviplata:</span><span>${formatCOP(daviplataTotal)} (${daviplataTxs.length})</span></div>
+          <div class="row"><span>Bancolombia:</span><span>${formatCOP(bancolombiaTotal)} (${bancolombiaTxs.length})</span></div>
           <div class="line"></div>
-          <div class="center" style="font-size: 10px; margin-top: 15px;">✓ Pagos verificados en tiempo real</div>
+          <div class="row bold"><span>TOTAL DIGITAL:</span><span>${formatCOP(totalDigital)}</span></div>
+          <div class="row"><span>Transacciones:</span><span>${countDigital} pagos</span></div>
+          <div class="row"><span>Ticket Promedio:</span><span>${formatCOP(averageTicket)}</span></div>
+          <div class="line"></div>
+          <div class="row bold big"><span>TOTAL EN CAJA:</span><span>${formatCOP(grandTotal)}</span></div>
+          <div class="center" style="font-size: 10px; margin-top: 12px;">(Base Efectivo + Pagos Digitales)</div>
+          
+          <div class="footer-sign">Firma Responsable de Caja</div>
+          <div class="center" style="font-size: 10px; margin-top: 15px;">✓ Verificado en tiempo real con ConfirmaYa</div>
           <script>
             window.onload = function() { window.print(); window.close(); }
           </script>
@@ -132,7 +192,7 @@ export default function CashierDashboard({ organizationId = 'org-demo' }: { orga
 
   const handleExportCSV = () => {
     const headers = "ID,Fecha,Hora,Billetera,Monto,Remitente,Referencia,Estado\n";
-    const rows = transactions.map(t => {
+    const rows = filteredTransactions.map(t => {
       const date = new Date(t.created_at);
       return `"${t.id}","${date.toLocaleDateString('es-CO')}","${date.toLocaleTimeString('es-CO')}","${t.source}","${t.amount}","${t.sender_name}","${t.reference_code || ''}","${t.status}"`;
     }).join("\n");
@@ -200,16 +260,22 @@ export default function CashierDashboard({ organizationId = 'org-demo' }: { orga
 
     const fetchTransactions = async () => {
       try {
+        const startOfToday = new Date();
+        startOfToday.setHours(0, 0, 0, 0);
+
         const { data } = await supabase
           .from('transactions')
           .select('*')
           .eq('organization_id', organizationId)
-          .order('created_at', { ascending: false })
-          .limit(20);
+          .gte('created_at', startOfToday.toISOString())
+          .order('created_at', { ascending: false });
 
         if (data && data.length > 0) {
           setTransactions(data);
           setLatestTx(data[0]);
+        } else {
+          setTransactions([]);
+          setLatestTx(null);
         }
       } catch (e) {}
     };
@@ -688,15 +754,19 @@ export default function CashierDashboard({ organizationId = 'org-demo' }: { orga
       {/* MODAL DE CIERRE DE CAJA DEL DÍA */}
       {showSummaryModal && (
         <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
-          <div className="bg-slate-900 border border-slate-700/80 rounded-3xl max-w-md w-full p-6 shadow-2xl relative overflow-hidden flex flex-col gap-5 animate-in fade-in zoom-in-95 duration-200">
-            <div className="flex items-center justify-between border-b border-slate-800 pb-4">
+          <div className="bg-slate-900 border border-slate-700/80 rounded-3xl max-w-lg w-full p-6 shadow-2xl relative overflow-hidden flex flex-col gap-4 animate-in fade-in zoom-in-95 duration-200 max-h-[90vh] overflow-y-auto">
+            
+            {/* Header del Modal */}
+            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
               <div className="flex items-center gap-3">
                 <div className="p-2.5 rounded-2xl bg-blue-500/10 border border-blue-500/20 text-blue-400">
                   <BarChart3 className="w-5 h-5" />
                 </div>
                 <div>
-                  <h3 className="text-lg font-black text-white">Cierre Diario de Caja</h3>
-                  <p className="text-xs text-slate-400">{new Date().toLocaleDateString('es-CO', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
+                  <h3 className="text-lg font-black text-white">Arqueo y Cierre de Caja</h3>
+                  <p className="text-xs text-slate-400 capitalize">
+                    {new Date().toLocaleDateString('es-CO', { weekday: 'long', year: 'numeric', month: 'short', day: 'numeric' })}
+                  </p>
                 </div>
               </div>
               <button
@@ -707,49 +777,156 @@ export default function CashierDashboard({ organizationId = 'org-demo' }: { orga
               </button>
             </div>
 
-            {/* Total General */}
-            <div className="bg-slate-950/70 border border-slate-800 rounded-2xl p-5 text-center">
-              <span className="text-xs uppercase tracking-wider text-slate-400 font-bold">Total Recaudado Hoy</span>
-              <p className="text-3xl font-black text-emerald-400 mt-1">{formatCOP(totalToday)}</p>
-              <span className="text-xs text-slate-500 mt-1 block">{countToday} transferencias confirmadas</span>
+            {/* Controles de Filtro */}
+            <div className="flex items-center justify-between bg-slate-950/60 p-2.5 rounded-2xl border border-slate-800 text-xs">
+              <div className="flex gap-1.5">
+                <button
+                  onClick={() => setFilterView('today')}
+                  className={`px-3 py-1.5 rounded-xl font-bold transition-all ${
+                    filterView === 'today'
+                      ? 'bg-emerald-500 text-slate-950 shadow-sm'
+                      : 'text-slate-400 hover:text-white'
+                  }`}
+                >
+                  Turno de Hoy
+                </button>
+                <button
+                  onClick={() => setFilterView('all')}
+                  className={`px-3 py-1.5 rounded-xl font-bold transition-all ${
+                    filterView === 'all'
+                      ? 'bg-blue-500 text-white shadow-sm'
+                      : 'text-slate-400 hover:text-white'
+                  }`}
+                >
+                  Ver Historial
+                </button>
+              </div>
+
+              <label className="flex items-center gap-1.5 cursor-pointer text-slate-400 hover:text-slate-200">
+                <input
+                  type="checkbox"
+                  checked={excludeDemos}
+                  onChange={(e) => setExcludeDemos(e.target.checked)}
+                  className="rounded border-slate-700 bg-slate-900 text-emerald-500 focus:ring-0"
+                />
+                <span>Ocultar pruebas</span>
+              </label>
+            </div>
+
+            {/* Configurar Base Inicial en Efectivo */}
+            <div className="bg-slate-950/40 border border-slate-800 rounded-2xl p-3.5">
+              <div className="flex justify-between items-center mb-2">
+                <span className="text-xs font-bold text-slate-300 flex items-center gap-1.5">
+                  <DollarSign className="w-3.5 h-3.5 text-amber-400" />
+                  Base de Efectivo (Para Dar Vueltas):
+                </span>
+                <span className="font-bold text-amber-400 text-sm">{formatCOP(cashBase)}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                {[0, 20000, 50000, 100000].map((amt) => (
+                  <button
+                    key={amt}
+                    onClick={() => setCashBase(amt)}
+                    className={`flex-1 py-1.5 rounded-lg text-[11px] font-bold border transition-all ${
+                      cashBase === amt
+                        ? 'bg-amber-500/20 border-amber-500/50 text-amber-300'
+                        : 'bg-slate-900 border-slate-800 text-slate-400 hover:bg-slate-800'
+                    }`}
+                  >
+                    {amt === 0 ? 'Sin Base' : `$${amt / 1000}k`}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Tarjeta de Resumen Principal */}
+            <div className="bg-gradient-to-br from-slate-950 to-slate-900 border border-slate-800 rounded-2xl p-4 flex flex-col gap-3">
+              <div className="grid grid-cols-2 gap-3 text-center border-b border-slate-800/80 pb-3">
+                <div>
+                  <span className="text-[11px] uppercase tracking-wider text-slate-400 font-bold block">Pagos Digitales</span>
+                  <span className="text-2xl font-black text-emerald-400">{formatCOP(totalDigital)}</span>
+                  <span className="text-[10px] text-slate-500 block">{countDigital} transferencias</span>
+                </div>
+                <div>
+                  <span className="text-[11px] uppercase tracking-wider text-slate-400 font-bold block">Total en Caja (+ Base)</span>
+                  <span className="text-2xl font-black text-white">{formatCOP(grandTotal)}</span>
+                  <span className="text-[10px] text-slate-400 block">Efectivo + Digital</span>
+                </div>
+              </div>
+
+              {/* Métricas secundarias */}
+              <div className="grid grid-cols-2 gap-2 text-xs text-slate-300 pt-1">
+                <div className="flex justify-between bg-slate-900/60 p-2 rounded-xl">
+                  <span className="text-slate-400">Venta Promedio:</span>
+                  <span className="font-bold text-white">{formatCOP(averageTicket)}</span>
+                </div>
+                <div className="flex justify-between bg-slate-900/60 p-2 rounded-xl">
+                  <span className="text-slate-400">Mayor Pago:</span>
+                  <span className="font-bold text-emerald-300">{highestTx ? formatCOP(highestTx.amount) : '$0'}</span>
+                </div>
+              </div>
             </div>
 
             {/* Desglose por Billetera */}
-            <div className="space-y-2">
-              <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Desglose por Billetera</span>
-              <div className="bg-slate-950/50 rounded-xl p-3 border border-slate-800/80 space-y-2 text-xs">
+            <div className="space-y-1.5">
+              <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Desglose por Canal Digital</span>
+              <div className="bg-slate-950/60 rounded-xl p-3 border border-slate-800/80 space-y-2 text-xs">
                 <div className="flex justify-between items-center">
-                  <span className="text-slate-300 font-semibold">Nequi:</span>
+                  <span className="text-slate-300 font-semibold flex items-center gap-1.5">
+                    <span className="w-2.5 h-2.5 rounded-full bg-purple-500"></span> Nequi ({nequiTxs.length})
+                  </span>
                   <span className="font-bold text-emerald-400">{formatCOP(nequiTotal)}</span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-slate-300 font-semibold">Daviplata:</span>
+                  <span className="text-slate-300 font-semibold flex items-center gap-1.5">
+                    <span className="w-2.5 h-2.5 rounded-full bg-red-500"></span> Daviplata ({daviplataTxs.length})
+                  </span>
                   <span className="font-bold text-emerald-400">{formatCOP(daviplataTotal)}</span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-slate-300 font-semibold">Bancolombia:</span>
+                  <span className="text-slate-300 font-semibold flex items-center gap-1.5">
+                    <span className="w-2.5 h-2.5 rounded-full bg-amber-400"></span> Bancolombia ({bancolombiaTxs.length})
+                  </span>
                   <span className="font-bold text-emerald-400">{formatCOP(bancolombiaTotal)}</span>
                 </div>
               </div>
             </div>
 
-            {/* Acciones: Imprimir Ticket o Exportar CSV */}
-            <div className="grid grid-cols-2 gap-3 pt-2">
+            {/* Botón WhatsApp al Dueño (Destacado) */}
+            <button
+              onClick={handleShareWhatsApp}
+              className="w-full py-3.5 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-500 font-black text-xs text-white uppercase tracking-wider flex items-center justify-center gap-2 shadow-lg shadow-emerald-950 transition-all active:scale-98"
+            >
+              <Share2 className="w-4 h-4" />
+              <span>Enviar Cierre por WhatsApp al Dueño</span>
+            </button>
+
+            {/* Acciones Secundarias */}
+            <div className="grid grid-cols-3 gap-2">
               <button
                 onClick={handlePrintSummary}
-                className="flex items-center justify-center gap-2 py-3 px-4 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold border border-slate-700 transition-all shadow-sm"
+                className="flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold border border-slate-700 transition-all"
               >
-                <Printer className="w-4 h-4 text-emerald-400" />
+                <Printer className="w-3.5 h-3.5 text-emerald-400" />
                 <span>Ticket Térmico</span>
               </button>
               <button
                 onClick={handleExportCSV}
-                className="flex items-center justify-center gap-2 py-3 px-4 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold border border-slate-700 transition-all shadow-sm"
+                className="flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold border border-slate-700 transition-all"
               >
-                <Download className="w-4 h-4 text-blue-400" />
-                <span>Exportar CSV</span>
+                <Download className="w-3.5 h-3.5 text-blue-400" />
+                <span>Excel (CSV)</span>
+              </button>
+              <button
+                onClick={handleResetShift}
+                className="flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl bg-slate-800 hover:bg-rose-950 text-slate-300 hover:text-rose-300 text-xs font-bold border border-slate-700 hover:border-rose-800 transition-all"
+                title="Reiniciar pantalla a $0 para el turno de la tarde"
+              >
+                <RotateCw className="w-3.5 h-3.5 text-rose-400" />
+                <span>Nuevo Turno</span>
               </button>
             </div>
+
           </div>
         </div>
       )}

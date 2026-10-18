@@ -35,10 +35,10 @@ export default function DescargarPage() {
           <p className="text-xs font-bold uppercase tracking-widest text-emerald-400 mb-2">Versión 1.0.0 Oficial</p>
           <h2 className="text-2xl font-black text-white mb-6">ConfirmaYa Agente (.APK)</h2>
 
-          {/* Enlace de descarga que apunta a /downloads/ConfirmaYa.apk */}
+          {/* Enlace de descarga directa por stream binario */}
           <a
-            href="/downloads/ConfirmaYa.apk"
-            download
+            href="/api/download"
+            download="ConfirmaYa.apk"
             className="inline-flex items-center justify-center gap-3 px-8 py-5 rounded-2xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-lg shadow-xl shadow-emerald-500/30 transition-all hover:scale-105 active:scale-95 w-full sm:w-auto"
           >
             <Download className="w-6 h-6" />
