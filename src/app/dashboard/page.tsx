@@ -656,16 +656,15 @@ export default function DashboardPage() {
               </div>
             </div>
 
-            <button
-              onClick={() => {
-                alert('Redirigiendo a la pasarela segura de Wompi...');
-                window.open('https://checkout.wompi.co', '_blank');
-                setShowWompiModal(false);
-              }}
-              className="w-full py-4 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-sm uppercase tracking-wider transition-all shadow-lg shadow-emerald-500/25"
+            <a
+              href="https://checkout.wompi.co/l/RJ26Ay"
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={() => setShowWompiModal(false)}
+              className="w-full py-4 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-sm uppercase tracking-wider transition-all shadow-lg shadow-emerald-500/25 block text-center"
             >
-              Proceder al Pago Seguro
-            </button>
+              Proceder al Pago Seguro ($30.000 COP)
+            </a>
 
             <button
               onClick={() => setShowWompiModal(false)}

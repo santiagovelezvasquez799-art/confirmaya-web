@@ -290,6 +290,18 @@ export default function LandingPage() {
           <p className="text-center text-xs text-slate-500 mt-4">
             Activación inmediata • No requiere tarjeta de crédito para iniciar
           </p>
+
+          <div className="mt-6 pt-5 border-t border-slate-800/80 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs">
+            <span className="text-slate-400">¿Deseas pagar tu suscripción mensual directamente?</span>
+            <a
+              href="https://checkout.wompi.co/l/RJ26Ay"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-emerald-400 hover:text-emerald-300 font-bold underline"
+            >
+              Pagar $30.000 con Wompi →
+            </a>
+          </div>
         </div>
       </section>
 
