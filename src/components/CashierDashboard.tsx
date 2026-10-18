@@ -30,6 +30,7 @@ import {
   TrendingUp
 } from 'lucide-react';
 import PairingModal from '@/components/PairingModal';
+import WhatsAppSupportButton from '@/components/WhatsAppSupportButton';
 
 interface Transaction {
   id: string;
@@ -930,6 +931,9 @@ export default function CashierDashboard({ organizationId = 'org-demo' }: { orga
           </div>
         </div>
       )}
+
+      {/* BOTÓN FLOTANTE DE SOPORTE WHATSAPP */}
+      <WhatsAppSupportButton defaultMessage="¡Hola ConfirmaYa! Tengo una consulta desde la pantalla de caja POS." />
     </div>
   );
 }

@@ -5,6 +5,8 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { supabase, isSupabaseConfigured } from '@/lib/supabaseClient';
 import PairingModal from '@/components/PairingModal';
+import OnboardingWizard from '@/components/OnboardingWizard';
+import WhatsAppSupportButton from '@/components/WhatsAppSupportButton';
 import { 
   Store, 
   Smartphone, 
@@ -79,6 +81,7 @@ export default function DashboardPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [showPairingModal, setShowPairingModal] = useState(false);
   const [showWompiModal, setShowWompiModal] = useState(false);
+  const [showOnboarding, setShowOnboarding] = useState(false);
   const [copiedKey, setCopiedKey] = useState(false);
 
   useEffect(() => {
@@ -149,6 +152,13 @@ export default function DashboardPage() {
 
       if (txData) {
         setTransactions(txData);
+        if (txData.length === 0) {
+          const hasSeen = localStorage.getItem('confirmaya_seen_onboarding');
+          if (!hasSeen) {
+            setShowOnboarding(true);
+            localStorage.setItem('confirmaya_seen_onboarding', 'true');
+          }
+        }
       }
     } catch (e) {
       console.error('Error cargando dashboard:', e);
@@ -315,6 +325,15 @@ export default function DashboardPage() {
 
         {/* Acciones Rápidas */}
         <div className="flex items-center gap-2">
+          <button
+            onClick={() => setShowOnboarding(true)}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 text-xs font-bold text-emerald-400 border border-emerald-500/30 transition-all shadow-sm"
+            title="Guía de Activación en 3 Pasos"
+          >
+            <Sparkles className="w-3.5 h-3.5 text-emerald-400" />
+            <span className="hidden sm:inline">Guía 3 Pasos</span>
+          </button>
+
           <Link
             href="/pos"
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-bold text-slate-200 border border-slate-700 transition-all shadow-sm"
@@ -625,6 +644,17 @@ export default function DashboardPage() {
         endpointUrl="https://www.confirmaya.lat/api/ingest"
         storeName={org?.name || 'Mi Comercio'}
       />
+
+      {/* ASISTENTE ONBOARDING EN 3 PASOS */}
+      <OnboardingWizard
+        isOpen={showOnboarding}
+        onClose={() => setShowOnboarding(false)}
+        onOpenPairing={() => setShowPairingModal(true)}
+        storeName={org?.name || 'Mi Comercio'}
+      />
+
+      {/* BOTÓN FLOTANTE DE SOPORTE WHATSAPP */}
+      <WhatsAppSupportButton />
 
       {/* MODAL DE PAGO WOMPI */}
       {showWompiModal && (
