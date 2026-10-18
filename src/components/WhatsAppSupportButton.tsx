@@ -9,7 +9,7 @@ interface WhatsAppSupportButtonProps {
 }
 
 export default function WhatsAppSupportButton({
-  phoneNumber = '573000000000', // Reemplazar con el número de atención oficial
+  phoneNumber = '573215526201', // Mode Agency Oficial
   defaultMessage = '¡Hola ConfirmaYa! Necesito ayuda con mi suscripción o activación de caja.'
 }: WhatsAppSupportButtonProps) {
   const handleClick = () => {

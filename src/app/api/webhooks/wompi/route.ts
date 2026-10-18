@@ -53,7 +53,20 @@ export async function POST(req: NextRequest) {
       const paymentMethod = tx.payment_method_type || "UNKNOWN";
       const wompiTxId = tx.id;
 
-      console.log(`[WOMPI WEBHOOK] Transacción ${wompiTxId} - Estado: ${status} - Ref: ${reference} - Email: ${customerEmail}`);
+      // DISCRIMINADOR MULTI-SISTEMA:
+      // Si el pago no pertenece a ConfirmaYa (por referencia o por monto de $30.000 COP = 3000000 centavos),
+      // respondemos 200 OK amigablemente para que Wompi no reintente, y no alteramos nada.
+      const isConfirmaYaPayment = 
+        reference.toLowerCase().includes("confirmaya") || 
+        reference.includes("RJ26Ay") ||
+        amountInCents === 3000000;
+
+      if (!isConfirmaYaPayment) {
+        console.log(`[WOMPI WEBHOOK] Transacción ${wompiTxId} ($${amountInCents/100} COP) pertenece a otro sistema de Mode Agency. Ignorando.`);
+        return NextResponse.json({ received: true, ignored: true, reason: "different_system" }, { status: 200 });
+      }
+
+      console.log(`[WOMPI WEBHOOK] Transacción ConfirmaYa ${wompiTxId} - Estado: ${status} - Ref: ${reference} - Email: ${customerEmail}`);
 
       if (status === "APPROVED") {
         // Renovar suscripción por 30 días
