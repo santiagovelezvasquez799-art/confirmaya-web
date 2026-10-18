@@ -351,6 +351,19 @@ export default function DashboardPage() {
             <Monitor className="w-3.5 h-3.5 text-blue-400" />
             <span className="hidden sm:inline">Pantalla Clientes</span>
           </Link>
+
+          <button
+            onClick={async () => {
+              if (confirm('¿Deseas cerrar tu sesión?')) {
+                await supabase.auth.signOut();
+                router.push('/login');
+              }
+            }}
+            className="p-2 rounded-xl bg-slate-800/80 hover:bg-rose-950 text-slate-400 hover:text-rose-400 border border-slate-700 hover:border-rose-800 transition-all"
+            title="Cerrar Sesión"
+          >
+            <LogOut className="w-3.5 h-3.5" />
+          </button>
         </div>
       </header>
 

@@ -89,6 +89,14 @@ export default function LoginPage() {
                   className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-10 pr-4 py-3 text-sm text-white focus:outline-none focus:border-emerald-500 transition-colors"
                 />
               </div>
+              <div className="text-right mt-1.5">
+                <Link
+                  href="/olvide-password"
+                  className="text-xs text-slate-400 hover:text-emerald-400 transition-colors"
+                >
+                  ¿Olvidaste tu contraseña?
+                </Link>
+              </div>
             </div>
 
             <button
