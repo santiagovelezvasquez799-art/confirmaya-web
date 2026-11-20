@@ -68,9 +68,35 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Monto invalido" }, { status: 400 });
     }
 
-    // 2. Hash Anti-duplicados (ventana de 5 min)
-    const fiveMinuteBucket = Math.floor((body.timestamp_unix || Date.now()) / (1000 * 60 * 5));
+    // 2. Verificación Inteligente Anti-Duplicados (Push + SMS doble sensor en ventana de 3 min)
     const normalizedSender = (body.sender_name || "ANON").trim().toUpperCase();
+    const threeMinutesAgo = new Date(Date.now() - 3 * 60 * 1000).toISOString();
+
+    let duplicateQuery = supabase
+      .from("transactions")
+      .select("id")
+      .eq("organization_id", org.id)
+      .eq("source", body.source || "nequi")
+      .eq("amount", body.amount)
+      .gte("created_at", threeMinutesAgo);
+
+    if (body.reference_code && body.reference_code.trim()) {
+      duplicateQuery = duplicateQuery.eq("reference_code", body.reference_code.trim());
+    } else if (normalizedSender && normalizedSender !== "ANON" && normalizedSender !== "REMITENTE NO ESPECIFICADO") {
+      duplicateQuery = duplicateQuery.ilike("sender_name", `%${normalizedSender}%`);
+    }
+
+    const { data: existingTx } = await duplicateQuery.limit(1).maybeSingle();
+    if (existingTx) {
+      return NextResponse.json({
+        status: "ignored_duplicate",
+        message: "Transferencia ya registrada previamente (Sensor Push/SMS sincronizado).",
+        transaction_id: existingTx.id,
+      });
+    }
+
+    // Hash secundario de integridad por base de datos
+    const fiveMinuteBucket = Math.floor((body.timestamp_unix || Date.now()) / (1000 * 60 * 5));
     const hashData = org.id + "_" + (body.source || "nequi") + "_" + body.amount + "_" + normalizedSender + "_" + (body.reference_code || "") + "_" + fiveMinuteBucket;
     const deduplicationHash = crypto.createHash("sha256").update(hashData).digest("hex");
 
