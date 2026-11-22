@@ -423,7 +423,7 @@ export default function DashboardPage() {
           </button>
 
           <Link
-            href="/pos"
+            href={`/pos?org=${org?.id || ''}`}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-bold text-slate-200 border border-slate-700 transition-all shadow-sm"
             title="Abrir Pantalla de Caja"
           >
@@ -432,7 +432,7 @@ export default function DashboardPage() {
           </Link>
 
           <Link
-            href="/pantalla-cliente"
+            href={`/pantalla-cliente?org=${org?.id || ''}`}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-bold text-slate-200 border border-slate-700 transition-all shadow-sm"
             title="Abrir Pantalla para Clientes"
           >
@@ -1068,6 +1068,57 @@ export default function DashboardPage() {
                 >
                   Guardar Preferencia de Cierre
                 </button>
+              </div>
+            </div>
+
+            {/* ACCESOS SEGUROS PARA EMPLEADOS (SIN CLAVES) */}
+            <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 shadow-xl space-y-4">
+              <div className="flex items-center gap-3">
+                <div className="p-3 rounded-2xl bg-blue-500/10 text-blue-400 border border-blue-500/20">
+                  <Laptop className="w-6 h-6" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-white">Enlaces de Mostrador (Para Empleados)</h3>
+                  <p className="text-xs text-slate-400">Tus cajeros NO necesitan tu correo ni contraseña. Solo abre estos enlaces en el mostrador.</p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
+                <div className="p-4 rounded-2xl bg-slate-950 border border-slate-800 space-y-3">
+                  <div>
+                    <span className="text-xs font-bold text-white block">Pantalla de Caja POS</span>
+                    <span className="text-[11px] text-slate-400">Canta los pagos con voz y hace el cierre</span>
+                  </div>
+                  <button
+                    onClick={() => {
+                      const url = `${window.location.origin}/pos?org=${org?.id || ''}`;
+                      navigator.clipboard.writeText(url);
+                      alert('¡Enlace de Caja copiado al portapapeles! Guárdalo en favoritos en la computadora de tu cajero.');
+                    }}
+                    className="w-full py-2.5 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs flex items-center justify-center gap-2 border border-slate-700 transition-all"
+                  >
+                    <Copy className="w-3.5 h-3.5 text-emerald-400" />
+                    <span>Copiar Enlace de Caja</span>
+                  </button>
+                </div>
+
+                <div className="p-4 rounded-2xl bg-slate-950 border border-slate-800 space-y-3">
+                  <div>
+                    <span className="text-xs font-bold text-white block">Pantalla de Clientes</span>
+                    <span className="text-[11px] text-slate-400">Muestra el QR y confeti en una tablet</span>
+                  </div>
+                  <button
+                    onClick={() => {
+                      const url = `${window.location.origin}/pantalla-cliente?org=${org?.id || ''}`;
+                      navigator.clipboard.writeText(url);
+                      alert('¡Enlace de Clientes copiado al portapapeles! Ábrelo en la tablet frente al cliente.');
+                    }}
+                    className="w-full py-2.5 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs flex items-center justify-center gap-2 border border-slate-700 transition-all"
+                  >
+                    <Copy className="w-3.5 h-3.5 text-blue-400" />
+                    <span>Copiar Enlace de Clientes</span>
+                  </button>
+                </div>
               </div>
             </div>
 

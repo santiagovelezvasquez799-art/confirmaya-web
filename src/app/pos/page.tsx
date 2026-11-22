@@ -26,6 +26,23 @@ function PosContent() {
       }
       if (orgParam) {
         setResolvedOrgId(orgParam);
+        return;
+      }
+
+      // Si el dueño abrió la caja desde su sesión activa
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data: orgData } = await supabase
+          .from('organizations')
+          .select('id')
+          .eq('owner_id', user.id)
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .single();
+        if (orgData?.id) {
+          setResolvedOrgId(orgData.id);
+          return;
+        }
       }
     }
     resolveStore();
